@@ -64,13 +64,13 @@
         <div id="result-card" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all duration-300">
             <div class="bg-slate-900 px-6 py-4 flex items-center justify-between text-white">
                 <h2 class="font-semibold flex items-center gap-2">
-                    <span>🗺️</span> Your Custom Travel Plan
+                    <span>🗺️</span> <span id="itinerary-title">Your Custom Travel Plan</span>
                 </h2>
                 <button onclick="copyToClipboard()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-md border border-slate-700 transition cursor-pointer">
                     Copy Text
                 </button>
             </div>
-            <div id="itinerary-output" class="p-6 prose max-w-none text-slate-700 leading-relaxed whitespace-pre-wrap"></div>
+            <div id="itinerary-output" class="p-6 space-y-6"></div>
         </div>
 
     </main>
@@ -88,23 +88,21 @@
             const spinner = document.getElementById("loading-spinner");
             const resultCard = document.getElementById("result-card");
             const outputDiv = document.getElementById("itinerary-output");
+            const titleSpan = document.getElementById("itinerary-title");
 
             const promptText = promptInput.value.trim();
 
-            // Simple validation checking if textarea is empty
             if (!promptText) {
                 alert("Please enter a destination or description before generating!");
                 return;
             }
 
-            // UI Adjustments: disable buttons and show loading spinner
             generateBtn.disabled = true;
             generateBtn.classList.add("opacity-50", "cursor-not-allowed");
             spinner.classList.remove("hidden");
             resultCard.classList.add("hidden");
 
             try {
-                // Hitting your exact backend route
                 const response = await fetch(`${BACKEND_URL}/api/plan-trip`, {
                     method: "POST",
                     headers: {
@@ -120,34 +118,62 @@
                 const data = await response.json();
                 console.log("Data successfully fetched from pipeline:", data);
 
-                // Populate the UI with data. Handles string properties or nested object layouts
-                if (data.itinerary) {
-                    outputDiv.textContent = data.itinerary;
-                } else if (typeof data === "string") {
-                    outputDiv.textContent = data;
+                // FIXED: Extracts the payload object and creates HTML cards instead of raw string dump
+                if (data.payload) {
+                    const trip = data.payload;
+                    
+                    // Update header title summary dynamically
+                    titleSpan.innerText = `${trip.destination} (${trip.duration_days} Days) - ${trip.travel_style}`;
+                    
+                    // Add summary banner block
+                    let htmlBuilder = `
+                        <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl text-sm text-blue-800">
+                            <strong>Key Interests:</strong> ${trip.interests}<br>
+                            <span class="text-xs text-slate-500">Database Coordinates Saved: ${trip.latitude}, ${trip.longitude}</span>
+                        </div>
+                        <div class="space-y-4">
+                    `;
+
+                    // Loop through the itinerary nodes and build neat rows
+                    trip.daily_itinerary.forEach(day => {
+                        htmlBuilder += `
+                            <div class="border border-slate-200 rounded-xl p-5 shadow-xs bg-slate-50/50">
+                                <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-3">
+                                    <h3 class="font-bold text-lg text-blue-700">Day ${day.day_number}</h3>
+                                    <span class="text-xs bg-slate-200 text-slate-700 font-medium px-2 py-0.5 rounded">Est. $${day.estimated_cost_usd}</span>
+                                </div>
+                                <div class="space-y-3 text-sm text-slate-700">
+                                    <p><strong>🌅 Morning:</strong> ${day.morning_activity}</p>
+                                    <p><strong>☀️ Afternoon:</strong> ${day.afternoon_activity}</p>
+                                    <p><strong>🌙 Evening:</strong> ${day.evening_activity}</p>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    htmlBuilder += `</div>`;
+                    outputDiv.innerHTML = htmlBuilder;
                 } else {
+                    // Fallback formatting if payload shape is completely missing
                     outputDiv.textContent = JSON.stringify(data, null, 2);
                 }
 
-                // Show result card
                 resultCard.classList.remove("hidden");
 
             } catch (error) {
                 console.error("Pipeline Connection Breakdown:", error);
                 alert("Pipeline connection fault: " + error.message + "\n\nPlease ensure your Render app is fully built and active.");
             } finally {
-                // Always reset UI state out of loading configuration
                 generateBtn.disabled = false;
                 generateBtn.classList.remove("opacity-50", "cursor-not-allowed");
                 spinner.classList.add("hidden");
             }
         }
 
-        // Utility helper to copy text layout easily
         function copyToClipboard() {
-            const text = document.getElementById("itinerary-output").textContent;
+            const text = document.getElementById("itinerary-output").innerText;
             navigator.clipboard.writeText(text);
-            alert("Itinerary copied to clipboard! 📋");
+            alert("Itinerary layout text copied to clipboard! 📋");
         }
     </script>
 </body>
