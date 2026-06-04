@@ -1,296 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Spatial Travel Planner</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <title>AI Travel Planner</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-
-        body {
-            background-color: #f0f4f8;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            color: #333;
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
         }
-
-        header {
-            background: linear-gradient(135deg, #1e3c72, #2a5298);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .main-container {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-            padding: 20px;
-            gap: 20px;
-        }
-
-        .panel-left {
-            width: 40%;
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            overflow-y: auto;
-        }
-
-        .panel-right {
-            width: 60%;
-            background: #e5e9f0;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-            position: relative;
-        }
-
-        #map {
-            height: 100%;
-            width: 100%;
-            z-index: 1;
-        }
-
-        textarea {
-            width: 100%;
-            height: 80px;
-            padding: 12px;
-            border: 2px solid #cbd5e1;
-            border-radius: 8px;
-            resize: none;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        textarea:focus {
-            border-color: #3b82f6;
-        }
-
-        button {
-            background-color: #2563eb;
-            color: white;
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.2s;
-            font-size: 14px;
-        }
-
-        button:hover {
-            background-color: #1d4ed8;
-        }
-
-        .export-btn {
-            background-color: #10b981;
-            margin-top: 10px;
-            display: none;
-        }
-
-        .export-btn:hover {
-            background-color: #059669;
-        }
-
-        .loader {
-            display: none;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #2563eb;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 10px auto;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .itinerary-output {
-            margin-top: 15px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .day-card {
-            border-left: 4px solid #3b82f6;
-            background-color: #f8fafc;
-            padding: 15px;
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
             border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
         }
-
-        .day-title {
-            font-weight: bold;
-            color: #1e3c72;
-            font-size: 16px;
-            margin-bottom: 8px;
-        }
-
-        .activity {
-            font-size: 13.5px;
-            margin-bottom: 5px;
-            color: #475569;
-        }
-
-        .activity strong {
-            color: #1e293b;
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
         }
     </style>
 </head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col">
 
-<body>
-
-    <header>
-        <h1>🎒 AI Spatial Travel Planner & Vacation Engine</h1>
-        <p>Generates deeply structured blueprints paired into live PostgreSQL/PostGIS spatial coordinates</p>
+    <header class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <span class="text-2xl">🌍</span>
+                <h1 class="text-xl font-bold tracking-tight text-slate-900">AI Travel Planner</h1>
+            </div>
+            <span class="text-xs bg-green-100 text-green-800 font-semibold px-2.5 py-0.5 rounded-full">Live Pipeline Connected</span>
+        </div>
     </header>
 
-    <div class="main-container">
-        <div class="panel-left">
-            <h3>Describe Your Ideal Vacation</h3>
-            <textarea id="prompt-input"
-                placeholder="e.g., A 3-day architectural tour of Rome focusing on history and amazing food..."></textarea>
-            <button id="generate-btn" onclick="generateTrip()">Generate & Map Vacation</button>
-            <button id="export-btn" class="export-btn" onclick="exportPDF()">📥 Download Verified PDF Blueprint</button>
-
-            <div id="loading-spinner" class="loader"></div>
-
-            <div id="itinerary-display" class="itinerary-output"></div>
+    <main class="flex-grow max-w-3xl mx-auto w-full px-4 py-8">
+        
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 mb-8">
+            <label for="prompt-input" class="block text-sm font-semibold text-slate-700 mb-2">
+                Where are you going? Describe your dream trip:
+            </label>
+            <textarea 
+                id="prompt-input" 
+                rows="4" 
+                class="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition resize-none text-slate-700 placeholder-slate-400"
+                placeholder="e.g., A 3-day food tour in Tokyo, Japan. Budget-friendly, lots of local ramen spots, and minimal walking..."
+            ></textarea>
+            
+            <button 
+                id="generate-btn"
+                onclick="generateItinerary()"
+                class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+            >
+                <span>✨ Generate Itinerary</span>
+            </button>
         </div>
 
-        <div class="panel-right">
-            <div id="map"></div>
+        <div id="loading-spinner" class="hidden flex-col items-center justify-center py-12 gap-3">
+            <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            <p class="text-sm font-medium text-slate-500 animate-pulse">Consulting Gemini AI & mapping your route...</p>
         </div>
-    </div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <div id="result-card" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all duration-300">
+            <div class="bg-slate-900 px-6 py-4 flex items-center justify-between text-white">
+                <h2 class="font-semibold flex items-center gap-2">
+                    <span>🗺️</span> Your Custom Travel Plan
+                </h2>
+                <button onclick="copyToClipboard()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-md border border-slate-700 transition cursor-pointer">
+                    Copy Text
+                </button>
+            </div>
+            <div id="itinerary-output" class="p-6 prose max-w-none text-slate-700 leading-relaxed whitespace-pre-wrap"></div>
+        </div>
+
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-4 text-center text-xs text-slate-400">
+        &copy; 2026 AI Travel Planner. Powered by Render, GitHub Pages & Gemini.
+    </footer>
+
     <script>
-        // Initialize global system variables
-        let map;
-        let currentTripId = null;
         const BACKEND_URL = "https://trip-planner-gxsg.onrender.com";
 
-        // Setup clean standard open map interface layer
-        function initMap() {
-            map = L.map('map').setView([20.0, 0.0], 2); // Default globally zoomed out view
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '© OpenStreetMap contributors'
-            }).addTo(map);
-        }
+        async function generateItinerary() {
+            const promptInput = document.getElementById("prompt-input");
+            const generateBtn = document.getElementById("generate-btn");
+            const spinner = document.getElementById("loading-spinner");
+            const resultCard = document.getElementById("result-card");
+            const outputDiv = document.getElementById("itinerary-output");
 
-        // Handle full pipeline request context loops
-        async function generateTrip() {
-            const prompt = document.getElementById('prompt-input').value.trim();
-            if (!prompt) return alert("Please type out a travel target blueprint script prompt context.");
+            const promptText = promptInput.value.trim();
 
-            // Toggle Visual States
-            document.getElementById('loading-spinner').style.display = 'block';
-            document.getElementById('generate-btn').disabled = true;
-            document.getElementById('itinerary-display').innerHTML = '';
-            document.getElementById('export-btn').style.display = 'none';
+            // Simple validation checking if textarea is empty
+            if (!promptText) {
+                alert("Please enter a destination or description before generating!");
+                return;
+            }
+
+            // UI Adjustments: disable buttons and show loading spinner
+            generateBtn.disabled = true;
+            generateBtn.classList.add("opacity-50", "cursor-not-allowed");
+            spinner.classList.remove("hidden");
+            resultCard.classList.add("hidden");
 
             try {
-                // Post Context payload to Endpoint 1
+                // Hitting your exact backend route
                 const response = await fetch(`${BACKEND_URL}/api/plan-trip`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt })
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ prompt: promptText })
                 });
 
-                if (!response.ok) throw new Error("Backend system processing error occured.");
+                if (!response.ok) {
+                    throw new Error(`Server returned error code: ${response.status}`);
+                }
+
                 const data = await response.json();
+                console.log("Data successfully fetched from pipeline:", data);
 
-                currentTripId = data.master_trip_id;
-                renderItinerary(data.payload);
-                await updateSpatialMap(currentTripId);
+                // Populate the UI with data. Handles string properties or nested object layouts
+                if (data.itinerary) {
+                    outputDiv.textContent = data.itinerary;
+                } else if (typeof data === "string") {
+                    outputDiv.textContent = data;
+                } else {
+                    outputDiv.textContent = JSON.stringify(data, null, 2);
+                }
 
-                // Show download capability on success
-                document.getElementById('export-btn').style.display = 'block';
+                // Show result card
+                resultCard.classList.remove("hidden");
 
             } catch (error) {
-                console.error(error);
-                alert("Pipeline Connection Fault: Unable to securely stream your request.");
+                console.error("Pipeline Connection Breakdown:", error);
+                alert("Pipeline connection fault: " + error.message + "\n\nPlease ensure your Render app is fully built and active.");
             } finally {
-                document.getElementById('loading-spinner').style.display = 'none';
-                document.getElementById('generate-btn').disabled = false;
+                // Always reset UI state out of loading configuration
+                generateBtn.disabled = false;
+                generateBtn.classList.remove("opacity-50", "cursor-not-allowed");
+                spinner.classList.add("hidden");
             }
         }
 
-        // Inject dynamic values back to interface layout UI cards
-        function renderItinerary(payload) {
-            const container = document.getElementById('itinerary-display');
-            let html = `<h2>📍 ${payload.destination}</h2>`;
-            html += `<p style="font-size:13px; color:#64748b; margin-bottom:10px;">Style: ${payload.travel_style} | Interests: ${payload.interests}</p>`;
-
-            payload.daily_itinerary.forEach(day => {
-                html += `
-                    <div class="day-card">
-                        <div class="day-title">Day ${day.day_number}</div>
-                        <div class="activity"><strong>🌅 Morning:</strong> ${day.morning_activity}</div>
-                        <div class="activity"><strong>☀️ Afternoon:</strong> ${day.afternoon_activity}</div>
-                        <div class="activity"><strong>🌙 Evening:</strong> ${day.evening_activity}</div>
-                        <div class="activity" style="color:#059669; font-weight:600; margin-top:5px;">Est. Cost: $${day.estimated_cost_usd}</div>
-                    </div>
-                `;
-            });
-            container.innerHTML = html;
+        // Utility helper to copy text layout easily
+        function copyToClipboard() {
+            const text = document.getElementById("itinerary-output").textContent;
+            navigator.clipboard.writeText(text);
+            alert("Itinerary copied to clipboard! 📋");
         }
-
-        // Pull spatial components via Endpoint 2 and update canvas coordinates
-        async function updateSpatialMap(tripId) {
-            try {
-                const response = await fetch(`${BACKEND_URL}/api/itinerary/${tripId}/map-data`);
-                const geoData = await response.json();
-
-                const lat = geoData.latitude;
-                const lon = geoData.longitude;
-
-                // Fly map engine smooth focus into spatial targets
-                map.flyTo([lat, lon], 11, { animate: true, duration: 2.5 });
-
-                // Drop custom graphical mapping pinning markers 
-                L.marker([lat, lon]).addTo(map)
-                    .bindPopup(`<b>${geoData.destination}</b><br>AI Structural Target Latched.`)
-                    .openPopup();
-
-            } catch (err) {
-                console.error("GIS Coordinate mapping alignment error: ", err);
-            }
-        }
-
-        // Redirect stream commands into binary PDF pipeline channels (Endpoint 3)
-        function exportPDF() {
-            if (!currentTripId) return;
-            window.open(`${BACKEND_URL}/api/itinerary/${currentTripId}/export`, '_blank');
-        }
-
-        // Initialize spatial map context layout configuration on immediate boot
-        window.onload = initMap;
     </script>
 </body>
-
 </html>
