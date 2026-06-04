@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 # FIXED: Explicitly initializing the Client using the exact GEMINI_API_KEY environment variable setup
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
+client = genai.Client(api_key=os.environ.get("AQ.Ab8RN6LQZDfQSfuFrEoZwUJfCPl8p_-QDWLSZlwoq2nzukHJiA"))
 
 class DailyItineraryNode(BaseModel):
     day_number: int
@@ -47,13 +47,12 @@ class UserRequest(BaseModel):
 
 
 def get_db_connection():
-    database_url = os.environ.get("DATABASE_URL")
+    database_url = os.environ.get("postgresql://neondb_owner:npg_OP26brKxHThY@ep-muddy-night-apktx82j-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require")
     if database_url:
         return psycopg2.connect(database_url)
     else:
         # Fallback local string if database_url is missing
-        return psycopg2.connect("postgresql://omkar:oUz7Pk31DYZf1XhBPFgwNc024CpQNLB9@dpg-d8geqv9kh4rs73akc97g-a/postgres1_6fpn")
-
+        return psycopg2.connect("postgresql://neondb_owner:npg_OP26brKxHThY@ep-muddy-night-apktx82j-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require")
 
 @app.post("/api/plan-trip")
 async def plan_trip(request: UserRequest):
