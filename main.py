@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 # Gemini AI Client Initialization
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6LccPp_NMojXKGcRnh6QgRRASjMLhCexZd6-AVxBNRojw"))
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6IXqAm87nxBhD3F5vKQcJtt603SCdvyAdKMLpY2YgJy1g"))
 
 # Pydantic Schemas for validation
 class DailyItineraryNode(BaseModel):
