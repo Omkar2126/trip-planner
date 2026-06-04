@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse
 
 app = FastAPI(title="AI Spatial Travel Planner Engine")
 
-
+# Enable Cross-Origin Resource Sharing (CORS)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -23,9 +23,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6JyiyvuVQd7Oge6MWl7Altqs0RKygkW1_aC1CXyVfjTyg"))
-
+# FIXED: Explicitly initializing the Client using the exact GEMINI_API_KEY environment variable setup
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 class DailyItineraryNode(BaseModel):
     day_number: int
@@ -49,12 +48,10 @@ class UserRequest(BaseModel):
 
 def get_db_connection():
     database_url = os.environ.get("DATABASE_URL")
-    
     if database_url:
-        
         return psycopg2.connect(database_url)
     else:
-      
+        # Fallback local string if database_url is missing
         return psycopg2.connect("postgresql://omkar:oUz7Pk31DYZf1XhBPFgwNc024CpQNLB9@dpg-d8geqv9kh4rs73akc97g-a/postgres1_6fpn")
 
 
@@ -94,14 +91,15 @@ async def plan_trip(request: UserRequest):
         conn = get_db_connection()
         cursor = conn.cursor()
         
+        # FIXED: Mapped database insert keys matching your Neon database layout
         insert_master_query = """
-        INSERT INTO user_itineraries (destination, duration_days, travel_style, interests, coordinates)
-        VALUES (%s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326)) RETURNING id;
+        INSERT INTO user_itineraries (destination, duration_days, travel_style, interests, latitude, longitude)
+        VALUES (%s, %s, %s, %s, %s, %s) RETURNING id;
         """
         cursor.execute(insert_master_query, (
             ai_data['destination'], ai_data['duration_days'], 
             ai_data['travel_style'], ai_data['interests'],
-            ai_data['longitude'], ai_data['latitude']
+            ai_data['latitude'], ai_data['longitude']
         ))
         master_id = cursor.fetchone()[0]
         
@@ -138,7 +136,8 @@ async def get_map_data(trip_id: int):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        query = "SELECT destination, ST_X(coordinates), ST_Y(coordinates) FROM user_itineraries WHERE id = %s;"
+        # FIXED: Replaced ST_X/ST_Y geographic function constraints with direct layout column selection
+        query = "SELECT destination, longitude, latitude FROM user_itineraries WHERE id = %s;"
         cursor.execute(query, (trip_id,))
         result = cursor.fetchone()
         
