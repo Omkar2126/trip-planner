@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse
 
 app = FastAPI(title="AI Spatial Travel Planner Engine")
 
-# CORS Middleware Configuration
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -23,10 +23,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Gemini AI Client Initialization
+
 client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6IXqAm87nxBhD3F5vKQcJtt603SCdvyAdKMLpY2YgJy1g"))
 
-# Pydantic Schemas for validation
+
 class DailyItineraryNode(BaseModel):
     day_number: int
     morning_activity: str
@@ -46,15 +46,15 @@ class CompleteTravelBlueprint(BaseModel):
 class UserRequest(BaseModel):
     prompt: str
 
-# Fixed and Secure Database Connection Routing
+
 def get_db_connection():
     database_url = os.environ.get("DATABASE_URL")
     
     if database_url:
-        # Render Environment connection
+        
         return psycopg2.connect(database_url)
     else:
-        # Fallback local connection string with valid python quotation syntax
+      
         return psycopg2.connect("postgresql://omkar:oUz7Pk31DYZf1XhBPFgwNc024CpQNLB9@dpg-d8geqv9kh4rs73akc97g-a/postgres1_6fpn")
 
 
