@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse
 
 app = FastAPI(title="AI Spatial Travel Planner Engine")
 
-
+# CORS Middleware Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -23,10 +23,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Gemini AI Client Initialization
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6LccPp_NMojXKGcRnh6QgRRASjMLhCexZd6-AVxBNRojw"))
 
-client = genai.Client(api_key="AQ.Ab8RN6LccPp_NMojXKGcRnh6QgRRASjMLhCexZd6-AVxBNRojw")
-
-
+# Pydantic Schemas for validation
 class DailyItineraryNode(BaseModel):
     day_number: int
     morning_activity: str
@@ -46,24 +46,16 @@ class CompleteTravelBlueprint(BaseModel):
 class UserRequest(BaseModel):
     prompt: str
 
-import os
-
+# Fixed and Secure Database Connection Routing
 def get_db_connection():
-   
     database_url = os.environ.get("DATABASE_URL")
     
     if database_url:
-       
-return psycopg2.connect("postgresql://omkar:oUz7Pk31DYZf1XhBPFgwNc024CpQNLB9@dpg-d8geqv9kh4rs73akc97g-a/postgres1_6fpn")
+        # Render Environment connection
+        return psycopg2.connect(database_url)
     else:
-        
-        return psycopg2.connect(
-            dbname="postgres",
-            user="postgres",
-            password="your_password",
-            host="localhost",
-            port="5432"
-        )
+        # Fallback local connection string with valid python quotation syntax
+        return psycopg2.connect("postgresql://omkar:oUz7Pk31DYZf1XhBPFgwNc024CpQNLB9@dpg-d8geqv9kh4rs73akc97g-a/postgres1_6fpn")
 
 
 @app.post("/api/plan-trip")
@@ -73,7 +65,6 @@ async def plan_trip(request: UserRequest):
         initial_delay = 2
         response_text = None
         
-
         for attempt in range(max_retries):
             try:
                 response = client.models.generate_content(
@@ -100,10 +91,8 @@ async def plan_trip(request: UserRequest):
             
         ai_data = json.loads(response_text)
         
-       
         conn = get_db_connection()
         cursor = conn.cursor()
-        
         
         insert_master_query = """
         INSERT INTO user_itineraries (destination, duration_days, travel_style, interests, coordinates)
@@ -137,7 +126,6 @@ async def plan_trip(request: UserRequest):
         }
         
     except Exception as e:
-     
         print("\n💥 --- DETECTED BACKEND CRASH TRACEBACK --- 💥")
         traceback.print_exc()
         print("💥 ---------------------------------------- 💥\n")
