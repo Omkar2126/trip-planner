@@ -12,10 +12,9 @@ import psycopg2
 from xhtml2pdf import pisa
 from fastapi.responses import FileResponse
 
-# 1. Initialize FastAPI Application Configuration
 app = FastAPI(title="AI Spatial Travel Planner Engine")
 
-# Configure Cross-Origin Resource Sharing (CORS) for Live Server
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  
@@ -24,11 +23,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. Instantiate Global Gemini AI Engine Client
-# TODO: Paste your real Gemini API key securely within the quotes!
+
 client = genai.Client(api_key="AQ.Ab8RN6LccPp_NMojXKGcRnh6QgRRASjMLhCexZd6-AVxBNRojw")
 
-# 3. Define Strictly Structured Data Models (Pydantic Schema Profiles)
+
 class DailyItineraryNode(BaseModel):
     day_number: int
     morning_activity: str
@@ -48,20 +46,26 @@ class CompleteTravelBlueprint(BaseModel):
 class UserRequest(BaseModel):
     prompt: str
 
-# 4. Global Database Routing Connector
-def get_db_connection():
-    # TODO: Replace with your real PostgreSQL password!
-    return psycopg2.connect(
-        dbname="postgres",
-        user="postgres",
-        password="omkar2126",
-        host="localhost",
-        port="5432"
-    )
+import os
 
-# =====================================================================
-# ENDPOINT 1: Process Text Prompt -> Generate Blueprint -> Write to Tables
-# =====================================================================
+def get_db_connection():
+   
+    database_url = os.environ.get("DATABASE_URL")
+    
+    if database_url:
+       
+        return psycopg2.connect(postgresql://omkar:oUz7Pk31DYZf1XhBPFgwNc024CpQNLB9@dpg-d8geqv9kh4rs73akc97g-a/postgres1_6fpn)
+    else:
+        
+        return psycopg2.connect(
+            dbname="postgres",
+            user="postgres",
+            password="your_password",
+            host="localhost",
+            port="5432"
+        )
+
+
 @app.post("/api/plan-trip")
 async def plan_trip(request: UserRequest):
     try:
@@ -69,7 +73,7 @@ async def plan_trip(request: UserRequest):
         initial_delay = 2
         response_text = None
         
-        # Robust Retry Framework to bypass 503 High Demand blocks
+
         for attempt in range(max_retries):
             try:
                 response = client.models.generate_content(
@@ -96,11 +100,11 @@ async def plan_trip(request: UserRequest):
             
         ai_data = json.loads(response_text)
         
-        # Write directly to relational PostGIS cluster tables
+       
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Insert metadata layout into Master Table
+        
         insert_master_query = """
         INSERT INTO user_itineraries (destination, duration_days, travel_style, interests, coordinates)
         VALUES (%s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326)) RETURNING id;
@@ -112,7 +116,6 @@ async def plan_trip(request: UserRequest):
         ))
         master_id = cursor.fetchone()[0]
         
-        # Insert structural days into Foreign Key Sub-Table
         insert_day_query = """
         INSERT INTO itinerary_days (itinerary_id, day_number, morning_activity, afternoon_activity, evening_activity, estimated_cost_usd)
         VALUES (%s, %s, %s, %s, %s, %s);
@@ -134,15 +137,13 @@ async def plan_trip(request: UserRequest):
         }
         
     except Exception as e:
-        # 🔥 FORCES SYSTEM LOGGING CRASH TRACEBACK INTO TERMINAL VIEW 🔥
+     
         print("\n💥 --- DETECTED BACKEND CRASH TRACEBACK --- 💥")
         traceback.print_exc()
         print("💥 ---------------------------------------- 💥\n")
         raise HTTPException(status_code=500, detail=str(e))
 
-# =====================================================================
-# ENDPOINT 2: Extract Spatial Geospatial Coordinates via PostGIS Engine
-# =====================================================================
+
 @app.get("/api/itinerary/{trip_id}/map-data")
 async def get_map_data(trip_id: int):
     try:
@@ -167,9 +168,7 @@ async def get_map_data(trip_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# =====================================================================
-# ENDPOINT 3: Dynamic Data Mining -> Render Document Vector -> Export PDF
-# =====================================================================
+
 @app.get("/api/itinerary/{trip_id}/export")
 async def export_pdf(trip_id: int):
     pdf_filename = f"itinerary_trip_{trip_id}.pdf"
