@@ -54,7 +54,7 @@ def get_db_connection():
     
     if database_url:
        
-        return psycopg2.connect(postgresql://omkar:oUz7Pk31DYZf1XhBPFgwNc024CpQNLB9@dpg-d8geqv9kh4rs73akc97g-a/postgres1_6fpn)
+return psycopg2.connect("postgresql://omkar:oUz7Pk31DYZf1XhBPFgwNc024CpQNLB9@dpg-d8geqv9kh4rs73akc97g-a/postgres1_6fpn")
     else:
         
         return psycopg2.connect(
