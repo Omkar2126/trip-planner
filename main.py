@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 
-client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6IXqAm87nxBhD3F5vKQcJtt603SCdvyAdKMLpY2YgJy1g"))
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY", "AQ.Ab8RN6JyiyvuVQd7Oge6MWl7Altqs0RKygkW1_aC1CXyVfjTyg"))
 
 
 class DailyItineraryNode(BaseModel):
