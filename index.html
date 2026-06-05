@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Travel Planner</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <style>
-        /* Custom scrollbar for a cleaner look */
         ::-webkit-scrollbar {
             width: 8px;
         }
@@ -19,6 +19,11 @@
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
+        }
+        #map {
+            height: 300px;
+            width: 100%;
+            z-index: 10;
         }
     </style>
 </head>
@@ -66,10 +71,18 @@
                 <h2 class="font-semibold flex items-center gap-2">
                     <span>🗺️</span> <span id="itinerary-title">Your Custom Travel Plan</span>
                 </h2>
-                <button onclick="copyToClipboard()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-md border border-slate-700 transition cursor-pointer">
-                    Copy Text
-                </button>
+                <div class="flex gap-2">
+                    <button id="pdf-btn" onclick="downloadPDF()" class="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-md transition cursor-pointer font-medium">
+                        📥 Download PDF
+                    </button>
+                    <button onclick="copyToClipboard()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-md border border-slate-700 transition cursor-pointer">
+                        Copy Text
+                    </button>
+                </div>
             </div>
+
+            <div id="map" class="border-b border-slate-200 bg-slate-100"></div>
+
             <div id="itinerary-output" class="p-6 space-y-6"></div>
         </div>
 
@@ -79,8 +92,12 @@
         &copy; 2026 AI Travel Planner. Powered by Render, GitHub Pages & Gemini.
     </footer>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <script>
         const BACKEND_URL = "https://trip-planner-gxsg.onrender.com";
+        let currentTripId = null; 
+        let mapInstance = null;   
 
         async function generateItinerary() {
             const promptInput = document.getElementById("prompt-input");
@@ -118,14 +135,13 @@
                 const data = await response.json();
                 console.log("Data successfully fetched from pipeline:", data);
 
-                // FIXED: Extracts the payload object and creates HTML cards instead of raw string dump
+                currentTripId = data.master_trip_id;
+
                 if (data.payload) {
                     const trip = data.payload;
                     
-                    // Update header title summary dynamically
                     titleSpan.innerText = `${trip.destination} (${trip.duration_days} Days) - ${trip.travel_style}`;
                     
-                    // Add summary banner block
                     let htmlBuilder = `
                         <div class="bg-blue-50 border border-blue-100 p-4 rounded-xl text-sm text-blue-800">
                             <strong>Key Interests:</strong> ${trip.interests}<br>
@@ -134,7 +150,6 @@
                         <div class="space-y-4">
                     `;
 
-                    // Loop through the itinerary nodes and build neat rows
                     trip.daily_itinerary.forEach(day => {
                         htmlBuilder += `
                             <div class="border border-slate-200 rounded-xl p-5 shadow-xs bg-slate-50/50">
@@ -153,20 +168,63 @@
 
                     htmlBuilder += `</div>`;
                     outputDiv.innerHTML = htmlBuilder;
-                } else {
-                    // Fallback formatting if payload shape is completely missing
-                    outputDiv.textContent = JSON.stringify(data, null, 2);
-                }
 
-                resultCard.classList.remove("hidden");
+                    resultCard.classList.remove("hidden");
+
+                    initializeMap(trip.latitude, trip.longitude, trip.destination);
+                } else {
+                    outputDiv.textContent = JSON.stringify(data, null, 2);
+                    resultCard.classList.remove("hidden");
+                }
 
             } catch (error) {
                 console.error("Pipeline Connection Breakdown:", error);
-                alert("Pipeline connection fault: " + error.message + "\n\nPlease ensure your Render app is fully built and active.");
+                alert("Pipeline connection fault: " + error.message);
             } finally {
                 generateBtn.disabled = false;
                 generateBtn.classList.remove("opacity-50", "cursor-not-allowed");
                 spinner.classList.add("hidden");
+            }
+        }
+
+        function initializeMap(lat, lng, destinationName) {
+            if (mapInstance) {
+                mapInstance.remove();
+            }
+
+            mapInstance = L.map('map').setView([lat, lng], 12);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(mapInstance);
+
+            L.marker([lat, lng]).addTo(mapInstance)
+                .bindPopup(`<b>${destinationName}</b><br>AI Target Base Coordinate Saved.`)
+                .openPopup();
+            
+            setTimeout(() => { mapInstance.invalidateSize(); }, 200);
+        }
+
+        async function downloadPDF() {
+            if (!currentTripId) {
+                alert("No active trip profile located to compile PDF extraction.");
+                return;
+            }
+
+            const pdfBtn = document.getElementById("pdf-btn");
+            pdfBtn.innerText = "⏳ Building PDF...";
+            pdfBtn.disabled = true;
+
+            try {
+                window.location.href = `${BACKEND_URL}/api/itinerary/${currentTripId}/export`;
+            } catch (err) {
+                console.error(err);
+                alert("Error compilation downloading target document registry binary structure.");
+            } finally {
+                setTimeout(() => {
+                    pdfBtn.innerText = "📥 Download PDF";
+                    pdfBtn.disabled = false;
+                }, 2000);
             }
         }
 
